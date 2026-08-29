@@ -11,10 +11,14 @@ int main() {
   while (true) {
     std::cout << "$ ";
     // read user input
-    std::string command;
-    std::getline(std::cin, command);
+    std::string input;
+    std::getline(std::cin, input);
+
+    if (input == "exit") {
+      break;
+    }
     // print user input
-    std::cout << command << ": command not found" << std::endl;
+    std::cout << input << ": command not found" << std::endl;
   }
 
 
