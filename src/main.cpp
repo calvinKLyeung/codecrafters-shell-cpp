@@ -17,6 +17,13 @@ int main() {
     std:
     if (input == "exit") {
       break;
+    } else if (input.substr(0, 5) == "type ") {
+        std::string type = input.substr(5);
+        if (type == "exit" || type == "echo" || type == "type") {
+          std::cout << type << " is a shell builtin" << std::endl;
+        } else {
+          std::cout << type << ": not found" << std::endl;
+        }
     } else if (input.substr(0, 5) == "echo ") {
         std::cout << input.substr(5) << std::endl;
     } else {
@@ -24,6 +31,5 @@ int main() {
       std::cout << input << ": command not found" << std::endl;
     }
   }
-
 
 }
