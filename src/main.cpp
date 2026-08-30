@@ -26,9 +26,9 @@ std::pair<std::string, std::string> split_command(const std::string& input) {
   return {input.substr(0, space_pos), input.substr(space_pos + 1)};
 }
 
-std::vector<std::string> tokenize_args(const std::string& args) {
+std::vector<std::string> tokenize(const std::string& input) {
   std::vector<std::string> args_tokens;
-  std::istringstream stream(args);
+  std::istringstream stream(input);
   std::string token;
   while (stream >> token) {
     args_tokens.push_back(token);
@@ -77,26 +77,26 @@ void run_type(const std::string& command) {
   }
 }
 
-void process_command(const std::string& command, const std::string& args) {
-  if (command == builtin::EXIT) {
-    exit(0);
-  }
-  if (command == builtin::ECHO) {
-    run_echo(args);
-  } else if (command == builtin::TYPE) {
-    run_type(args);
-  } else {
-    // check if we can find in PATH,
-    // if yes -> executable
-    if (auto executable_path = find_in_path(command)) {
-      auto args_tokens = tokenize_args(args);
-      execv(executable_path.value().c_str(), to_argv(args_tokens).data());
-    } else {
-      // else -> not found
-      std::cout << command << ": command not found\n";
-    }
-  }
-}
+// void process_command(const std::string& command, const std::string& args) {
+//   if (command == builtin::EXIT) {
+//     exit(0);
+//   }
+//   if (command == builtin::ECHO) {
+//     run_echo(args);
+//   } else if (command == builtin::TYPE) {
+//     run_type(args);
+//   } else {
+//     // check if we can find in PATH,
+//     // if yes -> executable
+//     if (auto executable_path = find_in_path(command)) {
+//       auto args_tokens = tokenize(args);
+//       execv(executable_path.value().c_str(), to_argv(args_tokens).data());
+//     } else {
+//       // else -> not found
+//       std::cout << command << ": command not found\n";
+//     }
+//   }
+// }
 
 
 int main() {
@@ -111,6 +111,24 @@ int main() {
 
     auto [command, args] = split_command(input);
 
-    process_command(command, args);
+
+    if (command == builtin::EXIT) {
+      exit(0);
+    }
+    if (command == builtin::ECHO) {
+      run_echo(args);
+    } else if (command == builtin::TYPE) {
+      run_type(args);
+    } else {
+      // check if we can find in PATH,
+      // if yes -> executable
+      if (auto executable_path = find_in_path(command)) {
+        auto input_tokens = tokenize(input);
+        execv(executable_path.value().c_str(), to_argv(input_tokens).data());
+      } else {
+        // else -> not found
+        std::cout << command << ": command not found\n";
+      }
+    }
   }
 }
