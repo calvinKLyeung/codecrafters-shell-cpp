@@ -92,7 +92,9 @@ void run_cd(std::string path) {
   }
 
   std::error_code ec;
-  std::filesystem::create_directory(path, ec);
+  if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+    std::filesystem::current_path(path, ec);
+  }
   if (ec) {
     std::cout << "cd: " << path << ": No such file or directory\n";
   }
