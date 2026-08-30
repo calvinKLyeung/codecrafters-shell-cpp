@@ -106,7 +106,7 @@ int main() {
 
   std::string input;
   while (true) {
-    std::cout << "$ ";
+    std::cerr << "$ ";
     if (!std::getline(std::cin, input)) break; // EOF
 
     auto [command, args] = split_command(input);
