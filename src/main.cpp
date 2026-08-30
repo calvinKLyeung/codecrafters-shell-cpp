@@ -78,26 +78,17 @@ void run_type(const std::string& command) {
   }
 }
 
-// void process_command(const std::string& command, const std::string& args) {
-//   if (command == builtin::EXIT) {
-//     exit(0);
-//   }
-//   if (command == builtin::ECHO) {
-//     run_echo(args);
-//   } else if (command == builtin::TYPE) {
-//     run_type(args);
-//   } else {
-//     // check if we can find in PATH,
-//     // if yes -> executable
-//     if (auto executable_path = find_in_path(command)) {
-//       auto args_tokens = tokenize(args);
-//       execv(executable_path.value().c_str(), to_argv(args_tokens).data());
-//     } else {
-//       // else -> not found
-//       std::cout << command << ": command not found\n";
-//     }
-//   }
-// }
+void run_executable_in_child_process(std::optional<std::string> executable_path, std::string input) {
+  auto input_tokens = tokenize(input);
+  pid_t pid = fork();
+  if (pid == 0) {
+    execv(executable_path.value().c_str(), to_argv(input_tokens).data());
+    perror("execv");
+    _exit(127); // 127 means command not found
+  }
+  int status;
+  waitpid(pid, &status, 0); // blocks until child exits
+}
 
 
 int main() {
@@ -124,16 +115,7 @@ int main() {
       // check if we can find in PATH,
       // if yes -> executable
       if (auto executable_path = find_in_path(command)) {
-        auto input_tokens = tokenize(input);
-        pid_t pid = fork();
-        if (pid == 0) {
-          execv(executable_path.value().c_str(), to_argv(input_tokens).data());
-          perror("execv");
-          _exit(127); // 127 means command not found
-        } else {
-          int status;
-          waitpid(pid, &status, 0); // blocks until child exits
-        }
+        run_executable_in_child_process(executable_path, input);
       } else {
         // else -> not found
         std::cout << command << ": command not found\n";
