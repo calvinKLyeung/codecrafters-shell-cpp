@@ -93,10 +93,10 @@ void run_cd(std::string path) {
   std::error_code ec;
   if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
     std::filesystem::current_path(path, ec);
+    if (!ec) return;
   }
-  if (ec) {
-    std::cout << "cd: " << path << ": No such file or directory\n";
-  }
+  std::cout << "cd: " << path << ": No such file or directory\n";
+
 }
 
 void run_executable_in_child_process(std::optional<std::string> executable_path, std::string input) {
