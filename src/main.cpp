@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 
 namespace builtin {
@@ -16,7 +17,7 @@ namespace builtin {
   }
 }
 
-
+// =============== handle args  ===============
 std::pair<std::string, std::string> split_command(const std::string& input) {
   auto space_pos = input.find(' ');
   if (space_pos == std::string::npos) {
@@ -25,6 +26,27 @@ std::pair<std::string, std::string> split_command(const std::string& input) {
   return {input.substr(0, space_pos), input.substr(space_pos + 1)};
 }
 
+std::vector<std::string> tokenize_args(const std::string& args) {
+  std::vector<std::string> args_tokens;
+  std::istringstream stream(args);
+  std::string token;
+  while (stream >> token) {
+    args_tokens.push_back(token);
+  }
+  return args_tokens;
+}
+
+std::vector<char*> to_argv(const std::vector<std::string>& args) {
+  std::vector<char*> argv;
+  for (const auto& arg: args) {
+    argv.push_back(const_cast<char*>(arg.c_str()));
+  }
+  argv.push_back(nullptr); // execv requires a null terminator
+  return argv;
+}
+
+
+// =============== commands  ===============
 void run_echo(const std::string& args) {
   std::cout << args << "\n";
 }
@@ -64,7 +86,15 @@ void process_command(const std::string& command, const std::string& args) {
   } else if (command == builtin::TYPE) {
     run_type(args);
   } else {
-    std::cout << command << ": command not found\n";
+    // check if we can find in PATH,
+    // if yes -> executable
+    if (auto executable_path = find_in_path(command)) {
+      auto args_tokens = tokenize_args(args);
+      execv(executable_path.value().c_str(), to_argv(args_tokens).data());
+    } else {
+      // else -> not found
+      std::cout << command << ": command not found\n";
+    }
   }
 }
 
