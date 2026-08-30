@@ -5,6 +5,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <sys/wait.h>
 
 
 namespace builtin {
@@ -106,7 +107,7 @@ int main() {
 
   std::string input;
   while (true) {
-    std::cerr << "$ ";
+    std::cout << "$ ";
     if (!std::getline(std::cin, input)) break; // EOF
 
     auto [command, args] = split_command(input);
