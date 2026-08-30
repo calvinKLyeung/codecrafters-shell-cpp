@@ -129,7 +129,9 @@ int main() {
           execv(executable_path.value().c_str(), to_argv(input_tokens).data());
           perror("execv");
           _exit(127); // 127 means command not found
-          break;
+        } else {
+          int status;
+          waitpid(pid, &status, 0); // blocks until child exits
         }
       } else {
         // else -> not found
