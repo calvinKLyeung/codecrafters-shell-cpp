@@ -90,7 +90,6 @@ void run_cd(std::string path) {
   if (path == "~") {
     if (const char* home = std::getenv("HOME")) path = home;
   }
-
   std::error_code ec;
   if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
     std::filesystem::current_path(path, ec);
