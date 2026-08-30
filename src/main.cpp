@@ -1,9 +1,72 @@
+#include <cstdlib>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unistd.h>
 
 
+namespace builtin {
+  constexpr char EXIT[] = "exit";
+  constexpr char ECHO[] = "echo";
+  constexpr char TYPE[] = "type";
+
+  bool is_builtin(const std::string& name) {
+    return name == EXIT || name == ECHO || name == TYPE;
+  }
+}
+
+
+std::pair<std::string, std::string> split_command(const std::string& input) {
+  auto space_pos = input.find(' ');
+  if (space_pos == std::string::npos) {
+    return {input, ""};
+  }
+  return {input.substr(0, space_pos), input.substr(space_pos + 1)};
+}
+
+void run_echo(const std::string& args) {
+  std::cout << args << "\n";
+}
+
+// Search PATH for an executable named `command`. Returns the full path if found.
+std::optional<std::string> find_in_path(const std::string& command) {
+  const char* path_env = std::getenv("PATH");
+  if (!path_env) return std::nullopt;
+
+  std::istringstream path_stream(path_env);
+  std::string dir;
+  while (std::getline(path_stream, dir, ':')) {
+    std::string candidate = dir + "/" + command;
+    if (access(candidate.c_str(), X_OK) == 0) {
+      return candidate;
+    }
+  }
+  return std::nullopt;
+}
+
+void run_type(const std::string& command) {
+  if (builtin::is_builtin(command)) {
+    std::cout << command << " is a shell builtin\n";
+  } else if (auto path = find_in_path(command)) {
+    std::cout << command << " is " << *path << "\n";
+  } else {
+    std::cout << command << ": not found\n";
+  }
+}
+
+void process_command(const std::string& command, const std::string& args) {
+  if (command == builtin::EXIT) {
+    exit(0);
+  }
+  if (command == builtin::ECHO) {
+    run_echo(args);
+  } else if (command == builtin::TYPE) {
+    run_type(args);
+  } else {
+    std::cout << command << ": command not found\n";
+  }
+}
 
 
 int main() {
@@ -11,46 +74,13 @@ int main() {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-
-
+  std::string input;
   while (true) {
     std::cout << "$ ";
-    // read user input
-    std::string input;
-    std::getline(std::cin, input);
+    if (!std::getline(std::cin, input)) break; // EOF
 
+    auto [command, args] = split_command(input);
 
-    if (input == "exit") {
-      break;
-    } else if (input.substr(0, 5) == "type ") {
-      if (std::string command = input.substr(5); command == "exit" || command == "echo" || command == "type") {
-          std::cout << command << " is a shell builtin" << std::endl;
-          continue;
-      } else { // go through every directory in PATH
-          std::string pathvar = std::getenv("PATH");
-          std::istringstream path_stream(pathvar);
-          std::string pathsplit;
-          auto found = false;
-          while (std::getline(path_stream, pathsplit, ':')) {
-            std::string filepath = pathsplit + "/" + command;
-            if (access(filepath.c_str(), X_OK) == 0) {
-              std::cout << command << " is " << filepath << std::endl;
-              found = true;
-              break;
-            }
-          }
-          if (!found) {
-            std::cout << command << ": not found" << std::endl;
-          }
-        continue;
-      }
-    } else if (input.substr(0, 5) == "echo ") {
-        std::cout << input.substr(5) << std::endl;
-        continue;
-    } else {
-      // print user input
-      std::cout << input << ": command not found" << std::endl;
-    }
+    process_command(command, args);
   }
-
 }
