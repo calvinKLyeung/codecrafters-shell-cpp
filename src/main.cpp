@@ -90,9 +90,10 @@ void run_cd(std::string path) {
   if (path == "~") {
     if (const char* home = std::getenv("HOME")) path = home;
   }
-  if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-    std::filesystem::current_path(path);
-  } else {
+
+  std::error_code ec;
+  std::filesystem::create_directory(path, ec);
+  if (ec) {
     std::cout << "cd: " << path << ": No such file or directory\n";
   }
 }
