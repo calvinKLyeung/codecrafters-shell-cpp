@@ -14,9 +14,10 @@ namespace builtin {
   constexpr char ECHO[] = "echo";
   constexpr char TYPE[] = "type";
   constexpr char PWD[] = "pwd";
+  constexpr char CD[] = "cd";
 
   bool is_builtin(const std::string& name) {
-    return name == EXIT || name == ECHO || name == TYPE || name == PWD;
+    return name == EXIT || name == ECHO || name == TYPE || name == PWD || name == CD;
   }
 }
 
@@ -81,8 +82,16 @@ void run_type(const std::string& command) {
 }
 
 void run_pwd() {
-  const auto cwd = std::filesystem::current_path();
+  const std::filesystem::path cwd = std::filesystem::current_path();
   std::cout << cwd.string() << std::endl;
+}
+
+void run_cd(std::string path) {
+  if (std::filesystem::exists(path)) {
+    std::filesystem::current_path(path);
+  } else {
+    std::cout << "cd: " << path << ": No such file or directory\n";
+  }
 }
 
 void run_executable_in_child_process(std::optional<std::string> executable_path, std::string input) {
@@ -112,15 +121,17 @@ int main() {
     auto [command, args] = split_command(input);
 
 
-    if (command == builtin::EXIT) {
-      exit(0);
-    }
+    if (command == builtin::EXIT) exit(0);
+
+
     if (command == builtin::ECHO) {
       run_echo(args);
     } else if (command == builtin::TYPE) {
       run_type(args);
     } else if (command == builtin::PWD) {
       run_pwd();
+    } else if (command == builtin::CD) {
+      run_cd(args);
     } else {
       // check if we can find in PATH,
       // if yes -> executable
