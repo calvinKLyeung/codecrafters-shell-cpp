@@ -6,15 +6,17 @@
 #include <unistd.h>
 #include <vector>
 #include <sys/wait.h>
+#include <filesystem>
 
 
 namespace builtin {
   constexpr char EXIT[] = "exit";
   constexpr char ECHO[] = "echo";
   constexpr char TYPE[] = "type";
+  constexpr char PWD[] = "pwd";
 
   bool is_builtin(const std::string& name) {
-    return name == EXIT || name == ECHO || name == TYPE;
+    return name == EXIT || name == ECHO || name == TYPE || name == PWD;
   }
 }
 
@@ -78,6 +80,11 @@ void run_type(const std::string& command) {
   }
 }
 
+void run_pwd() {
+  const auto cwd = std::filesystem::current_path();
+  std::cout << cwd.string() << std::endl;
+}
+
 void run_executable_in_child_process(std::optional<std::string> executable_path, std::string input) {
   auto input_tokens = tokenize(input);
   pid_t pid = fork();
@@ -85,9 +92,10 @@ void run_executable_in_child_process(std::optional<std::string> executable_path,
     execv(executable_path.value().c_str(), to_argv(input_tokens).data());
     perror("execv");
     _exit(127); // 127 means command not found
+  } else {
+    int status;
+    waitpid(pid, &status, 0); // blocks main process until child exits
   }
-  int status;
-  waitpid(pid, &status, 0); // blocks until child exits
 }
 
 
@@ -111,6 +119,8 @@ int main() {
       run_echo(args);
     } else if (command == builtin::TYPE) {
       run_type(args);
+    } else if (command == builtin::PWD) {
+      run_pwd();
     } else {
       // check if we can find in PATH,
       // if yes -> executable
