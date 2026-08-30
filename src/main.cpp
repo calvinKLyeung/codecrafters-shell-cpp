@@ -124,7 +124,12 @@ int main() {
       // if yes -> executable
       if (auto executable_path = find_in_path(command)) {
         auto input_tokens = tokenize(input);
-        execv(executable_path.value().c_str(), to_argv(input_tokens).data());
+        pid_t pid = fork();
+        if (pid == 0) {
+          execv(executable_path.value().c_str(), to_argv(input_tokens).data());
+          perror("execv");
+          _exit(127); // 127 means command not found
+        }
       } else {
         // else -> not found
         std::cout << command << ": command not found\n";
