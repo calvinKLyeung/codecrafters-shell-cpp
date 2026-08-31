@@ -31,13 +31,43 @@ std::pair<std::string, std::string> split_command(const std::string& input) {
 }
 
 std::vector<std::string> tokenize(const std::string& input) {
-  std::vector<std::string> args_tokens;
+  std::vector<std::string> tokens;
   std::istringstream stream(input);
-  std::string token;
-  while (stream >> token) {
-    args_tokens.push_back(token);
+
+  bool in_quotes = false;
+  bool has_token = false; // check if there exists valid token between quotes '...'
+  std::string current;
+
+  // ============ Single Quote '' handling =============
+  for (char c : input) {
+    if (c == '\'') {
+      in_quotes = !in_quotes;
+      has_token = true;
+    } else if (c == ' ' && !in_quotes) {
+      if (has_token) {
+        tokens.push_back(current);
+        current.clear();
+        has_token = false;
+      }
+    } else {
+      current += c;
+      has_token = true;
+    }
   }
-  return args_tokens;
+
+  if (in_quotes) {
+    std::cerr << "Error: unterminated single quote" << std::endl;
+    return {};
+  }
+  // append the tailing current to token as well
+  if (has_token) {
+    tokens.push_back(current);
+  }
+  return tokens;
+}
+
+bool is_blank(const std::string& input) {
+  return input.find_first_not_of(" \t") == std::string::npos;
 }
 
 std::vector<char*> to_argv(const std::vector<std::string>& args) {
@@ -52,7 +82,13 @@ std::vector<char*> to_argv(const std::vector<std::string>& args) {
 
 // =============== commands  ===============
 void run_echo(const std::string& args) {
-  std::cout << args << "\n";
+  std::vector<std::string> tokenized_args = tokenize(args);
+  if (tokenized_args.empty()) return;
+  for (size_t i = 0; i < tokenized_args.size(); ++i) {
+    if (i > 0) std::cerr << " ";
+    std::cout << tokenized_args[i];
+  }
+  std::cout << std::endl;
 }
 
 // Search PATH for an executable named `command`. Returns the full path if found.
@@ -122,12 +158,11 @@ int main() {
   while (true) {
     std::cout << "$ ";
     if (!std::getline(std::cin, input)) break; // EOF
+    if (is_blank(input)) continue;
 
     auto [command, args] = split_command(input);
 
-
     if (command == builtin::EXIT) exit(0);
-
 
     if (command == builtin::ECHO) {
       run_echo(args);
