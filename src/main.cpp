@@ -34,28 +34,40 @@ std::vector<std::string> tokenize(const std::string& input) {
   std::vector<std::string> tokens;
   std::istringstream stream(input);
 
-  bool in_quotes = false;
   bool has_token = false; // check if there exists valid token between quotes '...'
   std::string current;
 
-  // ============ Single Quote '' handling =============
-  for (char c : input) {
-    if (c == '\'') {
-      in_quotes = !in_quotes;
-      has_token = true;
-    } else if (c == ' ' && !in_quotes) {
-      if (has_token) {
-        tokens.push_back(current);
-        current.clear();
-        has_token = false;
+  char in_quote_char = '\0'; // start with not in any quote
+
+  // ============ Quote handling, single and double '' "" =============
+  for (const char c : input) {
+    if (in_quote_char == '\0') {
+      if (c == '\'' || c == '"') {
+        // enter quotation now
+        in_quote_char = c;
+        has_token = true;
+      } else if (c == ' ') {
+        if (has_token) {
+          tokens.push_back(current);
+          current.clear();
+          has_token = false;
+        }
+      } else {
+        current += c;
+        has_token = true;
       }
     } else {
-      current += c;
-      has_token = true;
+      // inside quotation "" or ''
+      if (c == in_quote_char) {
+        // out of quote now
+        in_quote_char = '\0';
+      } else {
+        current += c;
+      }
     }
   }
 
-  if (in_quotes) {
+  if (in_quote_char != '\0') {
     std::cerr << "Error: unterminated single quote" << std::endl;
     return {};
   }
