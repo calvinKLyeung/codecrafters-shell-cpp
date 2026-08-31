@@ -38,9 +38,10 @@ std::vector<std::string> tokenize(const std::string& input) {
   std::string current;
 
   char in_quote_char = '\0'; // start with not in any quote
-  bool escaped = false;
+  bool escaped = false; // backslash escape Flag
 
   // ============ Quote handling, single and double '' "" =============
+  // also handling backslash escape sequence
   for (const char c : input) {
     if (!escaped) { // escaped == False
       if (in_quote_char == '\0') {
@@ -76,8 +77,10 @@ std::vector<std::string> tokenize(const std::string& input) {
     } else {  // escapted == True
       if (in_quote_char == '"') {
         if (c == '$' || c == '"' || c == '`' || c == '\\') {
+          // 4 special kind of charts need special treatment
           current += c;
         } else {
+          // otherwise keep the backslash
           current += '\\';
           current += c;
         }
