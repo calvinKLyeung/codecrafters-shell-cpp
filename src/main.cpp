@@ -116,12 +116,12 @@ std::vector<char*> to_argv(const std::vector<std::string>& args) {
 
 
 // =============== commands  ===============
-void run_echo(const std::string& args) {
-  std::vector<std::string> tokenized_args = tokenize(args);
-  if (tokenized_args.empty()) return;
-  for (size_t i = 0; i < tokenized_args.size(); ++i) {
+void run_echo(const std::vector<std::string>& args_tokens) {
+
+  if (args_tokens.empty()) return;
+  for (size_t i = 0; i < args_tokens.size(); ++i) {
     if (i > 0) std::cerr << " ";
-    std::cout << tokenized_args[i];
+    std::cout << args_tokens[i];
   }
   std::cout << std::endl;
 }
@@ -142,13 +142,13 @@ std::optional<std::string> find_in_path(const std::string& command) {
   return std::nullopt;
 }
 
-void run_type(const std::string& command) {
-  if (builtin::is_builtin(command)) {
-    std::cout << command << " is a shell builtin\n";
-  } else if (auto path = find_in_path(command)) {
-    std::cout << command << " is " << *path << "\n";
+void run_type(const std::string& argv) {
+  if (builtin::is_builtin(argv)) {
+    std::cout << argv << " is a shell builtin\n";
+  } else if (auto path = find_in_path(argv)) {
+    std::cout << argv << " is " << *path << "\n";
   } else {
-    std::cout << command << ": not found\n";
+    std::cout << argv << ": not found\n";
   }
 }
 
@@ -183,11 +183,13 @@ void run_executable_in_child_process(std::optional<std::string> executable_path,
   }
 }
 
-std::string sanitize_executable_cmd(std::string command) {
-  if (command[0] == '\'' || command[0] == '"') {
-    return command.substr(1, command.length() - 1);
+std::string join(const std::vector<std::string>& args) {
+  std::ostringstream ss;
+  for (size_t i = 0; i < args.size(); ++i) {
+    if (i != 0) ss << ' ';
+    ss << args[i];
   }
-  return command;
+  return ss.str();
 }
 
 
@@ -202,22 +204,27 @@ int main() {
     if (!std::getline(std::cin, input)) break; // EOF
     if (is_blank(input)) continue;
 
-    auto [command, args] = split_command(input);
+    // auto [command, args] = split_command(input);
+    std::vector<std::string> tokens = tokenize(input);
+    if (tokens.empty()) continue;
+
+    std::string command = tokens[0];
+    std::vector args(tokens.begin() + 1, tokens.end());
 
     if (command == builtin::EXIT) exit(0);
 
     if (command == builtin::ECHO) {
       run_echo(args);
     } else if (command == builtin::TYPE) {
-      run_type(args);
+      run_type(join(args));
     } else if (command == builtin::PWD) {
       run_pwd();
     } else if (command == builtin::CD) {
-      run_cd(args);
+      run_cd(join(args));
     } else {
       // check if we can find in PATH,
       // if yes -> executable
-      if (auto executable_path = find_in_path(sanitize_executable_cmd(command))) {
+      if (auto executable_path = find_in_path(command)) {
         run_executable_in_child_process(executable_path, input);
       } else {
         // else -> not found
