@@ -1,5 +1,3 @@
-[//]: # ([![progress-banner]&#40;https://backend.codecrafters.io/progress/shell/646d4b6d-1211-4a36-a660-603693e15875&#41;]&#40;https://app.codecrafters.io/users/calvinKLyeung?r=2qF&#41;)
-
 # Build Your Own Shell (C++)
 
 A POSIX-style shell written from scratch in C++23, following the
