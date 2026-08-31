@@ -183,6 +183,13 @@ void run_executable_in_child_process(std::optional<std::string> executable_path,
   }
 }
 
+std::string sanitize_executable_cmd(std::string command) {
+  if (command[0] == '\'' || command[0] == '"') {
+    return command.substr(1, command.length() - 1);
+  }
+  return command;
+}
+
 
 int main() {
   // Flush after every std::cout / std:cerr
@@ -210,7 +217,7 @@ int main() {
     } else {
       // check if we can find in PATH,
       // if yes -> executable
-      if (auto executable_path = find_in_path(command)) {
+      if (auto executable_path = find_in_path(sanitize_executable_cmd(command))) {
         run_executable_in_child_process(executable_path, input);
       } else {
         // else -> not found
