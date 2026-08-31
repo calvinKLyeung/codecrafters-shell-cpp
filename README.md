@@ -1,34 +1,57 @@
 [![progress-banner](https://backend.codecrafters.io/progress/shell/646d4b6d-1211-4a36-a660-603693e15875)](https://app.codecrafters.io/users/calvinKLyeung?r=2qF)
 
-This is a starting point for C++ solutions to the
-["Build Your Own Shell" Challenge](https://app.codecrafters.io/courses/shell/overview).
+# Build Your Own Shell (C++)
 
-In this challenge, you'll build your own POSIX compliant shell that's capable of
-interpreting shell commands, running external programs and builtin commands like
-cd, pwd, echo and more. Along the way, you'll learn about shell command parsing,
-REPLs, builtin commands, and more.
+A POSIX-style shell written from scratch in C++23, following the
+["Build Your Own Shell"](https://app.codecrafters.io/courses/shell/overview) challenge.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+It runs a REPL that parses a command line (quoting and backslash escapes included),
+executes builtins in-process, and runs external programs by searching `PATH` and
+`fork`/`execv`-ing them in a child process. Everything lives in [`src/main.cpp`](src/main.cpp).
 
-# Passing the first stage
+## Progress
 
-The entry point for your `shell` implementation is in `src/main.cpp`. Study and
-uncomment the relevant code, then run the command below to execute the tests on
-our servers:
+| Stage group | Done | What it covers |
+| --- | :---: | --- |
+| Base | ✅ 8/8 | Prompt, REPL, invalid commands, `exit`, `echo`, `type`, `PATH` lookup, running programs |
+| Navigation | ✅ 4/4 | `pwd`, `cd` with absolute / relative / home paths |
+| Quoting | ✅ 6/6 | Single and double quotes, backslash escapes, quoted executables |
+| Redirection | ⬜ 0/4 | `>`, `2>`, `>>`, `2>>` |
+| Command completion | ⬜ 0/6 | Tab-completing builtins and executables |
+| Filename completion | ⬜ 0/7 | Tab-completing files and directories |
+| Programmable completion | ⬜ 0/10 | The `complete` builtin |
+| Background jobs | ⬜ 0/9 | `&`, the `jobs` builtin, reaping |
+| Pipelines | ⬜ 0/3 | `a \| b`, multi-command, builtins in pipelines |
+| History | ⬜ 0/6 | `history` builtin, arrow-key navigation |
+| History persistence | ⬜ 0/6 | Reading and writing the history file |
+| Parameter expansion | ⬜ 0/7 | `declare`, shell variables, `$VAR` and `${VAR}` |
 
-```sh
-codecrafters submit
+## Running it
+
+1. Ensure you have `cmake` installed locally.
+2. Run `./your_program.sh` to run your program, which is implemented in `src/main.cpp`.
+
 ```
-
-Time to move on to the next stage!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `cmake` installed locally
-1. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.cpp`.
-1. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+$ echo "hello   world"
+hello   world
+$ echo 'single   quotes'
+single   quotes
+$ echo world\ \ \ hello
+world   hello
+$ type echo
+echo is a shell builtin
+$ type cat
+cat is /bin/cat
+$ cat notes.txt
+hello from a file
+$ ls
+notes.txt
+$ pwd
+/Users/you/Projects/codecrafters-shell-cpp
+$ cd /tmp
+$ pwd
+/tmp
+$ nosuchcmd
+nosuchcmd: command not found
+$ exit
+```

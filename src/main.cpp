@@ -144,11 +144,11 @@ std::optional<std::string> find_in_path(const std::string& command) {
 
 void run_type(const std::string& argv) {
   if (builtin::is_builtin(argv)) {
-    std::cout << argv << " is a shell builtin\n";
+    std::cout << argv << " is a shell builtin" << std::endl;
   } else if (auto path = find_in_path(argv)) {
-    std::cout << argv << " is " << *path << "\n";
+    std::cout << argv << " is " << *path << std::endl;
   } else {
-    std::cout << argv << ": not found\n";
+    std::cout << argv << ": not found" << std::endl;
   }
 }
 
@@ -170,7 +170,7 @@ void run_cd(std::string path) {
 
 }
 
-void run_executable_in_child_process(std::optional<std::string> executable_path, std::string input) {
+void run_executable_in_child_process(const std::optional<std::string>& executable_path, const std::string& input) {
   auto input_tokens = tokenize(input);
   pid_t pid = fork();
   if (pid == 0) {
@@ -228,7 +228,7 @@ int main() {
         run_executable_in_child_process(executable_path, input);
       } else {
         // else -> not found
-        std::cout << command << ": command not found\n";
+        std::cout << command << ": command not found" << std::endl;
       }
     }
   }
