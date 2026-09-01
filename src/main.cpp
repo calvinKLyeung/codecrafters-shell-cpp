@@ -1,12 +1,18 @@
 #include <cstdlib>
 #include <iostream>
+
 #include <optional>
 #include <sstream>
 #include <string>
-#include <unistd.h>
 #include <vector>
+
 #include <sys/wait.h>
 #include <filesystem>
+
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <algorithm>
 
 
 namespace builtin {
@@ -17,7 +23,7 @@ namespace builtin {
   constexpr char CD[] = "cd";
 
   bool is_builtin(const std::string& name) {
-    return name == EXIT || name == ECHO || name == TYPE || name == PWD || name == CD;
+    return name == EXIT || name == ECHO || name == TYPE || name == PWD || name == CD ;
   }
 }
 
@@ -116,8 +122,49 @@ std::vector<char*> to_argv(const std::vector<std::string>& args) {
 
 
 // =============== commands  ===============
-void run_echo(const std::vector<std::string>& args_tokens) {
+void run_redirect_stdout(const std::vector<std::string>& args) {
+  // prep file name
+  const auto it = std::ranges::find_if(args, [](const std::string& s) {
+        return s == ">" || s == "1>";
+    });
+  if (it == args.end() || std::next(it) == args.end()) {
+    std::cerr << "no output file specified for redirect" << std::endl;
+    return;
+  }
+  const std::string filename = *std::next(it);
 
+  // prep args for cmd
+  std::vector<std::string> cmd_args(args.begin(), it);
+
+  pid_t pid = fork();
+  if (pid == -1) {
+    perror("fork failed");
+    return;
+  }
+  if (pid == 0) {
+    int fd = open(filename.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd == -1) {
+      perror("open failed");
+      _exit(1);
+    }
+    dup2(fd, STDOUT_FILENO);
+    close(fd);
+
+    // build argv for execvp
+    std::vector<char*> argv;
+    for (auto& a : cmd_args) argv.push_back(a.data());
+    argv.push_back(nullptr);
+
+    // run
+    execvp(argv[0], argv.data());
+    perror("execvp failed");
+    _exit(127);
+  } else {
+    waitpid(pid, nullptr, 0);
+  }
+}
+
+void run_echo(const std::vector<std::string>& args_tokens) {
   if (args_tokens.empty()) return;
   for (size_t i = 0; i < args_tokens.size(); ++i) {
     if (i > 0) std::cerr << " ";
@@ -170,16 +217,21 @@ void run_cd(std::string path) {
 
 }
 
-void run_executable_in_child_process(const std::optional<std::string>& executable_path, const std::string& input) {
-  auto input_tokens = tokenize(input);
+void run_executable_in_child_process(const std::optional<std::string>& command, const std::vector<std::string>& args) {
   pid_t pid = fork();
   if (pid == 0) {
-    execv(executable_path.value().c_str(), to_argv(input_tokens).data());
-    perror("execv");
+    std::vector<std::string> full_argv;
+    full_argv.push_back(command.value());   // argv[0] = program name
+    full_argv.insert(full_argv.end(), args.begin(), args.end());
+
+    execvp(command.value().c_str(), to_argv(full_argv).data());
+    perror("execvp failed");
     _exit(127); // 127 means command not found
-  } else {
+  } else if (pid > 0) {
     int status;
     waitpid(pid, &status, 0); // blocks main process until child exits
+  } else {
+    perror("fork failed");
   }
 }
 
@@ -213,7 +265,9 @@ int main() {
 
     if (command == builtin::EXIT) exit(0);
 
-    if (command == builtin::ECHO) {
+    if (std::ranges::contains(args, ">") || std::ranges::contains(args, "1>")) {
+      run_redirect_stdout(tokens);
+    } else if (command == builtin::ECHO) {
       run_echo(args);
     } else if (command == builtin::TYPE) {
       run_type(join(args));
@@ -225,7 +279,7 @@ int main() {
       // check if we can find in PATH,
       // if yes -> executable
       if (auto executable_path = find_in_path(command)) {
-        run_executable_in_child_process(executable_path, input);
+        run_executable_in_child_process(command, args);
       } else {
         // else -> not found
         std::cout << command << ": command not found" << std::endl;
